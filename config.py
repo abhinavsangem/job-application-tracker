@@ -7,7 +7,7 @@ option = 'view' #["create_db_table", "view", "insert", "update", "delete"]
 
 
 #name params
-db_name = 'job_tracker'
+db_name = 'job_tracker_sql_alchemy'
 table_name = 'jobs'
 
 
@@ -22,6 +22,7 @@ db_params = {
     "password": os.getenv("DB_PASSWORD"),
     "port": os.getenv("DB_PORT") #5432 is the default PostgreSQL port, 5433 in for wsl postgres used here
 }
+
 
 #Insert params
 insert_params = {

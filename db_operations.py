@@ -6,7 +6,6 @@ JOB TRACKER
 3. Add job
 4. Modify job
 5. Delete job
-6. Exit
 """
 
 #TO START
@@ -18,27 +17,34 @@ JOB TRACKER
 # what if a job was inserted twice (eg duplication of role and company)
 # updating a job that doesnt exist
 
-#Rule
-#only do create and closing of conenctions in the main.py
-# with cursor() as curson - automatically closes the cursor
-# with connection() - does not close the connection automatically
+#fastapi/sqlalchemy/sqlmodel
+from sqlalchemy import text, URL
+from sqlmodel import Session, SQLModel, create_engine
 
-import psycopg2
-from psycopg2 import sql
-
+#config
 from config import db_params
 
-# Connect to the PostgreSQL server via pyscopg2
-def connect_to_postgres(db_name = "postgres"):
+database_url = URL.create(
+    "postgresql+psycopg2",
+    username=db_params["user"],
+    password=db_params["password"],
+    host=db_params["host"],
+    port=db_params["port"],
+    database=db_params["database"],
+)
+
+
+# Connect to the PostgreSQL database via sqlalchemy
+def custom_create_engine(db_name = "postgres"):
     try:
-        db_params["database"] = db_name  #change the database to the newly created one
-        conn = psycopg2.connect(**db_params) #this also makes it a transation without needing a commit() (context manager). automatically closes the connection.
-        print("Connection to PostgreSQL successful!")
-        
-        return conn        
+        #database_url=database_url.set(database=db_name)
+        engine = create_engine(database_url.set(database=db_name))
+        return engine        
 
     except Exception as error:
         print(f"Error connecting to database: {error}")
+
+
 
 
 #1. Create the database and table 
@@ -59,86 +65,58 @@ def connect_to_postgres(db_name = "postgres"):
 #statement2 - not commit
 #commit() - now commit all 3. the explicit commit() or WITH eithout a commit() makes it a transation
 
-
-def create_db(conn, db_name):
-    
-    conn.autocommit = True  #needs this avoid making it a transaction (which happens by default when autocommit=False and cur.execute is run)
-
+#create new db by default if one doesnt exist at start of session
+def create_db(engine, db_name):
     try:
-        cursor = conn.cursor()
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn: #autocommit needed since we are creating DB and that cannot be done in a transaction block
+            print("Successfully connected to the postgres database!")
 
-        #force to avoid db being access by other users issue, forcefully terminate all open connections to job_tracker
+            #check if the database already exists
 
-        disconnect_query = sql.SQL("""
-            SELECT pg_terminate_backend(pid) 
-            FROM pg_stat_activity 
-            WHERE datname = {database} AND pid <> pg_backend_pid(); """ #pg_backend_pid() is my script's connection to db (ie. disconnect everyone else but me)
-            
-        ).format(database = sql.Literal(db_name))
-    
-        cursor.execute(disconnect_query)
-        print("Terminated all other active connections.")
+            check_db_query = text("""
+                SELECT 1 as res
+                FROM pg_database 
+                WHERE datname = :database 
+            """
+            )
+        
+            check_db_result = conn.execute(check_db_query, {"database": db_name})
+            res = check_db_result.fetchone()
 
-        cursor.execute(
-            sql.SQL("DROP DATABASE IF EXISTS {database};").format(
-            database=sql.Identifier(db_name))
-        )
+            if res:
+                print("Database already exists.")
 
-        cursor.execute(
-            sql.SQL("CREATE DATABASE {database};").format(
-            database=sql.Identifier(db_name))
-        )
-        #cursor.execute(f"CREATE DATABASE {db_name};") dont do this (to avoid injections)
-        print(f"Database {db_name} created successfully!")
+                # #disconnect all other active connections to the database to allow future use of database (specifically drop, alter, or replace of database) --not needed here?
+                # disconnect_query = text("""
+                # SELECT pg_terminate_backend(pid) 
+                # FROM pg_stat_activity 
+                # WHERE datname = :database AND pid <> pg_backend_pid(); """ #pg_backend_pid() is my script's connection to db (ie. disconnect everyone else but me)          
+                # )
+        
+                # conn.execute(disconnect_query, {"database": new_db})
 
-        cursor.close()
+            else:
+                print("No DB.. Creating new database..")
+                database = engine.dialect.identifier_preparer.quote(db_name) #this will prevent injection
+                conn.execute(
+                    text(f"CREATE DATABASE {database}"))
+                print(f"Database {db_name} created successfully!")
 
-    except Exception as error:
-        print(f"Error creating database {db_name}: {error}") #will error if db doesnt exist
-        raise #re-raise the error
+
+    except Exception as e:
+        print(f"Connection failed: {e}")
 
 
 #..now define the table
+#engine will already be connected to the new database if it was created, so we can use the same engine to create tables in the new database
 
-def create_table(conn, db_name, table_name):
+def create_table(engine):
     try:             
-        # 2. Open a cursor to perform database operations
-        with conn.cursor() as cursor: #this will automatically close the cursor at the end of the block
-
-            cursor.execute(
-                sql.SQL("DROP TABLE IF EXISTS {table}").format(
-                table=sql.Identifier(table_name))
-            )
-
-            create_table_query = """
-                CREATE TABLE {table} (
-                    Id SERIAL PRIMARY KEY, 
-                    Role VARCHAR(50) NOT NULL,
-                    Company VARCHAR(50),
-                    Status VARCHAR(10) CHECK (Status IN ('Applied', 'Interview', 'Offer', 'Rejected')),
-                    Salary DECIMAL,
-                    Description VARCHAR(50) NOT NULL,
-                    Applied TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    Closing DATE,
-                    UNIQUE (Role, Company) 
-                ); 
-            """
-
-            cursor.execute(
-                sql.SQL(create_table_query).format(
-                table=sql.Identifier(table_name))
-            )
-
-            conn.commit() # Commit the transaction to save changes to the database, otherwise it will rollback by default
-
-            print(f"Table {db_name}.{table_name} created successfully!")
-
-
+        SQLModel.metadata.create_all(engine)  #will create all tables defined in the SQLModel classes (in this case, the Jobs table) if it doesnt exist already.
+        print("Jobs table already exists, or created successfully")
     except Exception as error:
         print(f"Error creating table: {error}")
         raise
-    
-        
 
 
 
