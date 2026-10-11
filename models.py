@@ -16,6 +16,7 @@ class JobsInsert(SQLModel):
     closing: date | None = Field(default = None)  
 
 #This will hold all fields and is the main table
+#Note when defining a new contraint/column, you need to drop and recreate it
 class Jobs(JobsInsert, table = True):
     id: int | None = Field(default=None, primary_key=True) #the db already knows this is an autoincrement col since it is an integer primary key (when defined like this in sql model)
     applied: datetime | None = Field(default = None,
@@ -25,6 +26,7 @@ class Jobs(JobsInsert, table = True):
     __table_args__  = (
         UniqueConstraint("role", "company", name="uq_role_company"),
         CheckConstraint("status IN ('Applied', 'Interview', 'Offer', 'Rejected')", name="check_status_valid"),
+        CheckConstraint("salary >= 0", name="check_salary_positive")
     )
 
 #Assign all the JobsInsert fields to none as they can be optionally updated by user. 
