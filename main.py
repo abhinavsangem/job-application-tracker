@@ -70,6 +70,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 #insert a JobInsert objct 
 #raise errors if table contrainsts are not met
+#new session per request
 @app.post("/jobs/") 
 def create_job(job: JobsInsert, session: SessionDep):
     try:
