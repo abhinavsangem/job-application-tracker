@@ -15,7 +15,7 @@ from datetime import datetime, date
 
 db_name = "test_db_fastapi"
 
-@pytest.fixture(name="session")
+@pytest.fixture(name="session") #a pytest fixture is the equivalent of a fastapi dependency
 def session_fixture():
     # engine = create_engine(
     #     "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
@@ -36,6 +36,7 @@ def session_fixture():
     SQLModel.metadata.drop_all(new_db_engine) #drop all tables in db_name if they exist 
     postgres_engine.dispose()
     new_db_engine.dispose()
+    #note we are not dropping the database. this will be reused by the other testing functions. only the tables are dropped so that each test function starts with a clean slate.
 
 
 
@@ -49,6 +50,13 @@ def client_fixture(session: Session):
     yield client
     app.dependency_overrides.clear()
 
+
+#HOW THE above code works
+# 1. client passed into testing function
+# 2. client fixture runs up until and inlclduing yield client (which calls the session fixture which runs up until and including yield session)
+# 3. this overrides the get_session dependency in main.py to use the session fixture. 
+# 4. test function finishes and client fixture ends, causing the stuff after yeild to be run in the client fixture (ie. clear dependency overrides)
+# 5. session fixture ends, causing the stuff after yield to be run in the session fixture (ie. drop all tables and dispose of engines)
 
 #verify viewing a job works
 def test_view_jobs(client: TestClient, session: Session):

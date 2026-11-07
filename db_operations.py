@@ -120,108 +120,108 @@ def create_table(engine):
 
 
 
-#2. View Jobs
-def view_jobs(conn,table_name):
-    try:
-        with conn.cursor() as cursor:
+# #2. View Jobs
+# def view_jobs(conn,table_name):
+#     try:
+#         with conn.cursor() as cursor:
                 
-            # 3. Execute the SQL query
-            select_query = "SELECT * FROM {table} ORDER BY applied;"
+#             # 3. Execute the SQL query
+#             select_query = "SELECT * FROM {table} ORDER BY applied;"
             
-            # Always pass query parameters as a tuple to prevent SQL injection!
-            cursor.execute(
-                sql.SQL(select_query).format(table = sql.Identifier(table_name))
-            )
+#             # Always pass query parameters as a tuple to prevent SQL injection!
+#             cursor.execute(
+#                 sql.SQL(select_query).format(table = sql.Identifier(table_name))
+#             )
             
-            # 4. Fetch the data using one of the fetch methods
-            records = cursor.fetchall()
+#             # 4. Fetch the data using one of the fetch methods
+#             records = cursor.fetchall()
             
-            # 5. Process your data
-            print(f"Total rows retrieved: {len(records)}")
-            for row in records:
-                # Each row is returned as a tuple ordered by your SELECT clause
-                print(f"Id: {row[0]} | Role: {row[1]} | Company: {row[2]} | Status: {row[3]} | Salary: {row[4]} | \
-                    Description: {row[5]} | Applied: {row[6]} | Closing: {row[7]}")
+#             # 5. Process your data
+#             print(f"Total rows retrieved: {len(records)}")
+#             for row in records:
+#                 # Each row is returned as a tuple ordered by your SELECT clause
+#                 print(f"Id: {row[0]} | Role: {row[1]} | Company: {row[2]} | Status: {row[3]} | Salary: {row[4]} | \
+#                     Description: {row[5]} | Applied: {row[6]} | Closing: {row[7]}")
 
-    except Exception as error:
-        print(f"Error viewing {table_name} table:", error)
-        raise
+#     except Exception as error:
+#         print(f"Error viewing {table_name} table:", error)
+#         raise
 
 
 
-#3. Add Jobs potentially avoid duplicates by checking if the role and company already exist
-def add_jobs(conn,table_name, role_name, company_name, status_val, salary_val, 
-                                            description_text, closing_date):
-    try:
-        with conn.cursor() as cursor:
+# #3. Add Jobs potentially avoid duplicates by checking if the role and company already exist
+# def add_jobs(conn,table_name, role_name, company_name, status_val, salary_val, 
+#                                             description_text, closing_date):
+#     try:
+#         with conn.cursor() as cursor:
             
-            # 3. Execute the SQL query
-            insert_query = "INSERT INTO {table} (Role, Company, Status, Salary, Description, Closing) \
-                            VALUES (%s, %s, %s, %s, %s, %s) RETURNING Id, Role, Company;"
-            insert_query = sql.SQL(insert_query).format(table = sql.Identifier(table_name))
+#             # 3. Execute the SQL query
+#             insert_query = "INSERT INTO {table} (Role, Company, Status, Salary, Description, Closing) \
+#                             VALUES (%s, %s, %s, %s, %s, %s) RETURNING Id, Role, Company;"
+#             insert_query = sql.SQL(insert_query).format(table = sql.Identifier(table_name))
             
-            # Always pass query parameters as a tuple to prevent SQL injection!
-            cursor.execute(insert_query, (role_name, company_name, status_val, salary_val, 
-                                        description_text, closing_date))
+#             # Always pass query parameters as a tuple to prevent SQL injection!
+#             cursor.execute(insert_query, (role_name, company_name, status_val, salary_val, 
+#                                         description_text, closing_date))
             
-            records = cursor.fetchone()
+#             records = cursor.fetchone()
 
-            conn.commit()  # Commit the transaction to save changes to the database
+#             conn.commit()  # Commit the transaction to save changes to the database
 
-            print(f"Record Inserted:\nId: {records[0]} | Role: {records[1]} | Company: {records[2]}")
+#             print(f"Record Inserted:\nId: {records[0]} | Role: {records[1]} | Company: {records[2]}")
             
-    except Exception as error:
-        print(f"Error updating {table_name} table:", error)
-        raise
+#     except Exception as error:
+#         print(f"Error updating {table_name} table:", error)
+#         raise
 
 
 
 
-#4. Modify Job status
-def update_job_status(conn, table_name, update_status, job_id_update):
-    try:
-        with conn.cursor() as cursor:
+# #4. Modify Job status
+# def update_job_status(conn, table_name, update_status, job_id_update):
+#     try:
+#         with conn.cursor() as cursor:
             
-            # 3. Execute the SQL query
-            modify_query = "UPDATE {table} SET Status = %s WHERE Id = %s RETURNING Id, Status;"
-            modify_query = sql.SQL(modify_query).format(table = sql.Identifier(table_name))
+#             # 3. Execute the SQL query
+#             modify_query = "UPDATE {table} SET Status = %s WHERE Id = %s RETURNING Id, Status;"
+#             modify_query = sql.SQL(modify_query).format(table = sql.Identifier(table_name))
             
-            # Always pass query parameters as a tuple to prevent SQL injection!
-            cursor.execute(modify_query, (update_status, job_id_update))
+#             # Always pass query parameters as a tuple to prevent SQL injection!
+#             cursor.execute(modify_query, (update_status, job_id_update))
 
-            conn.commit()  # Commit the transaction to save changes to the database
+#             conn.commit()  # Commit the transaction to save changes to the database
 
-            records = cursor.fetchone()
-            if records == None:
-                raise Exception(f"Error: No matching Job Id: {job_id_update} to update") #making it an exception so that the test can catch it and validate it 
-            else:
-                print(f"Status of Job Id {job_id_update} was modified to {update_status}!")
+#             records = cursor.fetchone()
+#             if records == None:
+#                 raise Exception(f"Error: No matching Job Id: {job_id_update} to update") #making it an exception so that the test can catch it and validate it 
+#             else:
+#                 print(f"Status of Job Id {job_id_update} was modified to {update_status}!")
 
-    except Exception as error:
-        print(f"Error updating {table_name} table:", error)
-        raise  #re-raising it so that the test can catch it and validate it -  the raise will kill the program
+#     except Exception as error:
+#         print(f"Error updating {table_name} table:", error)
+#         raise  #re-raising it so that the test can catch it and validate it -  the raise will kill the program
 
 
-#5. DELETE Jobs
-def delete_jobs(conn, table_name, job_id_delete):
-    try:
-        with conn.cursor() as cursor:
+# #5. DELETE Jobs
+# def delete_jobs(conn, table_name, job_id_delete):
+#     try:
+#         with conn.cursor() as cursor:
             
-            # 3. Execute the SQL query
-            delete_query = "DELETE FROM {table} WHERE Id = %s RETURNING Id, Status;"
-            delete_query = sql.SQL(delete_query).format(table = sql.Identifier(table_name))
+#             # 3. Execute the SQL query
+#             delete_query = "DELETE FROM {table} WHERE Id = %s RETURNING Id, Status;"
+#             delete_query = sql.SQL(delete_query).format(table = sql.Identifier(table_name))
             
-            # Always pass query parameters as a tuple to prevent SQL injection!
-            cursor.execute(delete_query, (job_id_delete,))
+#             # Always pass query parameters as a tuple to prevent SQL injection!
+#             cursor.execute(delete_query, (job_id_delete,))
 
-            conn.commit()  # Commit the transaction to save changes to the database
+#             conn.commit()  # Commit the transaction to save changes to the database
 
-            records = cursor.fetchone()
-            if records == None:
-                raise Exception(f"Error: No matching Job Id: {job_id_delete} to delete")
-            else:
-                print(f"Job Id {job_id_delete} was deleted!")
+#             records = cursor.fetchone()
+#             if records == None:
+#                 raise Exception(f"Error: No matching Job Id: {job_id_delete} to delete")
+#             else:
+#                 print(f"Job Id {job_id_delete} was deleted!")
 
-    except Exception as error:
-        print(f"Error deleting from {table_name} table:", error)
-        raise #re-raising it so that the test can catch it and validate it -  the raise will kill the program
+#     except Exception as error:
+#         print(f"Error deleting from {table_name} table:", error)
+#         raise #re-raising it so that the test can catch it and validate it -  the raise will kill the program

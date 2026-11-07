@@ -18,9 +18,8 @@ from sqlalchemy.exc import IntegrityError
 from helpers import raise_integrity_error
 
 
-
-#session -> cursor
 #engine -> connection
+#session -> cursor
 
 #this creates a context manager called 
 #create_db_tables() (think open()). it can be run with with() 
